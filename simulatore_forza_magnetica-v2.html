@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Simulatore Forza Magnetica sul Filo</title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f4f7fb;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #ffffff;
+    border-bottom: 1px solid #cbd5e1;
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .preset-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 860px) {
+    .main-layout {
+      flex-direction: row;
+      align-items: stretch;
+    }
+    .canvas-card {
+      flex: 1;
+    }
+    .controls-card {
+      width: 360px;
+      flex-shrink: 0;
+    }
+  }
+
+  .canvas-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    position: relative;
+    height: 410px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  @media (min-width: 860px) {
+    .canvas-card {
+      height: auto;
+      min-height: 520px;
+    }
+  }
+
+  canvas#simCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  .canvas-hint {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    pointer-events: none;
+  }
+
+  .status-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .controls-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+
+  .control-section {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+  }
+
+  .control-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+  }
+
+  .slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 34px;
+    accent-color: #2563eb;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 0.84rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #f8fafc;
+    padding: 6px 9px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .hand-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .hand-caption {
+    font-size: 0.82rem;
+    color: #1e293b;
+    margin-top: 6px;
+    line-height: 1.35;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Forza Magnetica su un Filo (F = i L &times; B)</h1>
+  <div class="preset-group">
+    <button id="btnCase1" class="active" onclick="setCase(1)">Caso 1: Corrente i &uarr;</button>
+    <button id="btnCase2" onclick="setCase(2)">Caso 2: Corrente i &darr;</button>
+  </div>
+</header>
+
+<div class="main-layout">
+  <div class="canvas-card" id="canvasWrapper">
+    <div class="canvas-hint">Trascina col dito per ruotare la vista 3D</div>
+    <canvas id="simCanvas" width="600" height="420"></canvas>
+    <div class="status-badge">
+      <span id="statusText">Caso 1 (i &uarr;): il filo viene tirato verso il fondo della calamita</span>
+      <span id="forceIntensity" style="color:#d97706;">Campo B: 100%</span>
+    </div>
+  </div>
+
+  <div class="controls-card">
+    <div class="control-section">
+      <div class="section-title">Posizione Calamita rispetto al Filo</div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Avanti / Indietro (profondità)</span>
+          <span id="valZ">0.0 cm</span>
+        </div>
+        <input type="range" id="sliderZ" min="-140" max="140" value="0" step="1">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Sinistra / Destra (tra S e N)</span>
+          <span id="valX">0.0 cm</span>
+        </div>
+        <input type="range" id="sliderX" min="-120" max="120" value="0" step="1">
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button style="flex:1; font-size:0.84rem;" onclick="resetPosition()">Centra Calamita</button>
+        <button style="flex:1; font-size:0.84rem;" onclick="moveOutside()">Allontana Calamita</button>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <div class="section-title">Regola della Mano Destra</div>
+      <div class="hand-box">
+        <canvas id="handCanvas" width="280" height="150" style="width:100%; max-width:280px; height:auto;"></canvas>
+        <div class="hand-caption" id="handCaption">
+          <strong>Pollice</strong> = corrente <b>i</b> (verso l'alto)<br>
+          <strong>Indice</strong> = campo <b>B</b> (da N a S, sinistra)<br>
+          <strong>Medio</strong> = forza <b>F</b> (tira verso il fondo)
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <div class="section-title">Legenda Vettori &amp; Poli</div>
+      <div class="legend-grid">
+        <div class="legend-item"><span class="dot" style="background:#2563eb"></span> Corrente <strong>i</strong></div>
+        <div class="legend-item"><span class="dot" style="background:#d946ef"></span> Campo <strong>B</strong> (N&rarr;S)</div>
+        <div class="legend-item"><span class="dot" style="background:#f59e0b"></span> Forza <strong>F</strong></div>
+        <div class="legend-item"><span class="dot" style="background:#dc2626"></span> Nord / <span class="dot" style="background:#16a34a"></span> Sud</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var simCanvas = document.getElementById('simCanvas');
+var ctx = simCanvas.getContext('2d');
+var handCanvas = document.getElementById('handCanvas');
+var hctx = handCanvas.getContext('2d');
+var canvasWrapper = document.getElementById('canvasWrapper');
+
+var state = {
+  currentDir: 1,
+  magX: 0,
+  magZ: 0,
+  rotY: -0.42,
+  rotX: 0.36
+};
+
+var sliderX = document.getElementById('sliderX');
+var sliderZ = document.getElementById('sliderZ');
+
+function handleSliderInput() {
+  state.magX = parseFloat(sliderX.value) || 0;
+  state.magZ = parseFloat(sliderZ.value) || 0;
+  updateUI();
+}
+
+sliderX.addEventListener('input', handleSliderInput);
+sliderX.addEventListener('change', handleSliderInput);
+sliderZ.addEventListener('input', handleSliderInput);
+sliderZ.addEventListener('change', handleSliderInput);
+
+function setCase(c) {
+  state.currentDir = (c === 1) ? 1 : -1;
+  document.getElementById('btnCase1').className = (c === 1) ? 'active' : '';
+  document.getElementById('btnCase2').className = (c === 2) ? 'active' : '';
+  updateUI();
+}
+
+function resetPosition() {
+  state.magX = 0;
+  state.magZ = 0;
+  sliderX.value = 0;
+  sliderZ.value = 0;
+  updateUI();
+}
+
+function moveOutside() {
+  state.magX = 0;
+  state.magZ = -115;
+  sliderX.value = 0;
+  sliderZ.value = -115;
+  updateUI();
+}
+
+// Rotazione 3D compatibile con tutti i browser Safari/iOS/Android (mouse + touch)
+var isDragging = false;
+var lastX = 0, lastY = 0;
+
+function startDrag(x, y) {
+  isDragging = true;
+  lastX = x;
+  lastY = y;
+}
+
+function moveDrag(x, y) {
+  if (!isDragging) return;
+  var dx = x - lastX;
+  var dy = y - lastY;
+  state.rotY += dx * 0.008;
+  state.rotX = Math.max(-0.2, Math.min(1.15, state.rotX + dy * 0.008));
+  lastX = x;
+  lastY = y;
+  draw();
+}
+
+function endDrag() {
+  isDragging = false;
+}
+
+simCanvas.addEventListener('mousedown', function(e) {
+  startDrag(e.clientX, e.clientY);
+});
+window.addEventListener('mousemove', function(e) {
+  moveDrag(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', endDrag);
+
+simCanvas.addEventListener('touchstart', function(e) {
+  if (e.touches && e.touches.length > 0) {
+    e.preventDefault();
+    startDrag(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: false });
+
+simCanvas.addEventListener('touchmove', function(e) {
+  if (e.touches && e.touches.length > 0) {
+    e.preventDefault();
+    moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: false });
+
+simCanvas.addEventListener('touchend', endDrag);
+simCanvas.addEventListener('touchcancel', endDrag);
+
+function computeFieldStrength() {
+  var relX = -state.magX;
+  var relZ = -state.magZ;
+  var insideX = Math.exp(-Math.pow(Math.max(0, Math.abs(relX) - 62) / 28, 2));
+  var insideZ = (relZ >= -50 && relZ <= 65)
+    ? 1.0
+    : Math.exp(-Math.pow((relZ < -50 ? -50 - relZ : relZ - 65) / 26, 2));
+  return Math.max(0, Math.min(1, insideX * insideZ));
+}
+
+function updateUI() {
+  var zCm = (state.magZ / 10).toFixed(1);
+  var xCm = (state.magX / 10).toFixed(1);
+  document.getElementById('valZ').textContent = zCm + ' cm';
+  document.getElementById('valX').textContent = xCm + ' cm';
+
+  var strength = computeFieldStrength();
+  var pct = Math.round(strength * 100);
+  document.getElementById('forceIntensity').textContent = 'Campo B sul filo: ' + pct + '%';
+
+  var statusText = document.getElementById('statusText');
+  if (pct < 12) {
+    statusText.textContent = 'Filo fuori dal campo magnetico: nessuna forza (F ≈ 0)';
+    statusText.style.color = '#64748b';
+  } else if (state.currentDir === 1) {
+    statusText.textContent = 'Caso 1 (i ↑): il filo viene tirato verso il lato orizzontale';
+    statusText.style.color = '#0f172a';
+  } else {
+    statusText.textContent = 'Caso 2 (i ↓): il filo viene respinto verso l\'esterno';
+    statusText.style.color = '#0f172a';
+  }
+
+  drawHandDiagram();
+  draw();
+}
+
+function project(x, y, z, cx, cy, scale) {
+  var cosY = Math.cos(state.rotY);
+  var sinY = Math.sin(state.rotY);
+  var x1 = x * cosY - z * sinY;
+  var z1 = x * sinY + z * cosY;
+
+  var cosX = Math.cos(state.rotX);
+  var sinX = Math.sin(state.rotX);
+  var y2 = y * cosX - z1 * sinX;
+  var z2 = y * sinX + z1 * cosX;
+
+  var fov = 620;
+  var persp = fov / (fov + z2);
+  return {
+    x: cx + x1 * scale * persp,
+    y: cy - y2 * scale * persp,
+    depth: z2
+  };
+}
+
+function drawBox3D(cx, cy, scale, x0, x1, y0, y1, z0, z1, fillTop, fillFront, fillSide, strokeColor) {
+  var pts = [
+    project(x0, y0, z0, cx, cy, scale),
+    project(x1, y0, z0, cx, cy, scale),
+    project(x1, y1, z0, cx, cy, scale),
+    project(x0, y1, z0, cx, cy, scale),
+    project(x0, y0, z1, cx, cy, scale),
+    project(x1, y0, z1, cx, cy, scale),
+    project(x1, y1, z1, cx, cy, scale),
+    project(x0, y1, z1, cx, cy, scale)
+  ];
+
+  var faces = [
+    { idx: [3, 2, 6, 7], color: fillTop },
+    { idx: [0, 1, 2, 3], color: fillFront },
+    { idx: [4, 5, 6, 7], color: fillFront },
+    { idx: [1, 5, 6, 2], color: fillSide },
+    { idx: [0, 4, 7, 3], color: fillSide }
+  ];
+
+  faces.sort(function(a, b) {
+    var da = (pts[a.idx[0]].depth + pts[a.idx[1]].depth + pts[a.idx[2]].depth + pts[a.idx[3]].depth) / 4;
+    var db = (pts[b.idx[0]].depth + pts[b.idx[1]].depth + pts[b.idx[2]].depth + pts[b.idx[3]].depth) / 4;
+    return db - da;
+  });
+
+  for (var f = 0; f < faces.length; f++) {
+    var face = faces[f];
+    ctx.beginPath();
+    for (var k = 0; k < 4; k++) {
+      var p = pts[face.idx[k]];
+      if (k === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = face.color;
+    ctx.fill();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+}
+
+function drawArrow2D(context, x1, y1, x2, y2, color, width, label, ox, oy) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 4) return;
+
+  var angle = Math.atan2(dy, dx);
+  var headLen = Math.min(13, len * 0.42);
+
+  context.save();
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = width;
+  context.lineCap = 'round';
+
+  context.beginPath();
+  context.moveTo(x1, y1);
+  context.lineTo(x2, y2);
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(x2, y2);
+  context.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+  context.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+  context.closePath();
+  context.fill();
+
+  if (label) {
+    context.font = 'bold 15px -apple-system, sans-serif';
+    context.fillText(label, x2 + ox, y2 + oy);
+  }
+  context.restore();
+}
+
+function drawRoundedRect(context, x, y, w, h, r) {
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.lineTo(x + w - r, y);
+  context.quadraticCurveTo(x + w, y, x + w, y + r);
+  context.lineTo(x + w, y + h - r);
+  context.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  context.lineTo(x + r, y + h);
+  context.quadraticCurveTo(x, y + h, x, y + h - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+  context.closePath();
+}
+
+function draw() {
+  var W = canvasWrapper.clientWidth || 600;
+  var H = canvasWrapper.clientHeight || 410;
+  var dpr = window.devicePixelRatio || 1;
+
+  simCanvas.width = Math.round(W * dpr);
+  simCanvas.height = Math.round(H * dpr);
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#fafcff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  var grid = 24;
+  for (var x = 0; x < W; x += grid) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (var y = 0; y < H; y += grid) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  var cx = W * 0.5;
+  var cy = H * 0.48;
+  var scale = Math.min(W, H) / 410;
+
+  var mx = state.magX;
+  var mz = state.magZ;
+
+  var armW = 34;
+  var outerX = 105;
+  var innerX = outerX - armW;
+  var zFront = -65;
+  var zBackInner = 50;
+  var zBackOuter = 85;
+  var yBot = -16;
+  var yTop = 16;
+
+  // Parte Sud (sinistra, verde)
+  drawBox3D(cx, cy, scale, mx - outerX, mx - innerX, yBot, yTop, zFront, zBackOuter,
+    '#bbf7d0', '#86efac', '#4ade80', '#15803d');
+  drawBox3D(cx, cy, scale, mx - innerX, mx, yBot, yTop, zBackInner, zBackOuter,
+    '#bbf7d0', '#86efac', '#4ade80', '#15803d');
+
+  // Parte Nord (destra, rossa)
+  drawBox3D(cx, cy, scale, mx + innerX, mx + outerX, yBot, yTop, zFront, zBackOuter,
+    '#fecaca', '#fca5a5', '#f87171', '#b91c1c');
+  drawBox3D(cx, cy, scale, mx, mx + innerX, yBot, yTop, zBackInner, zBackOuter,
+    '#fecaca', '#fca5a5', '#f87171', '#b91c1c');
+
+  var pS = project(mx - (outerX + innerX) / 2, yTop + 14, zFront + 15, cx, cy, scale);
+  var pN = project(mx + (outerX + innerX) / 2, yTop + 14, zFront + 15, cx, cy, scale);
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillStyle = '#15803d';
+  ctx.fillText('S', pS.x - 6, pS.y);
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillText('N', pN.x - 6, pN.y);
+
+  var zOffsets = [-38, -8, 22];
+  for (var i = 0; i < zOffsets.length; i++) {
+    var zOff = zOffsets[i];
+    var bStart = project(mx + innerX - 4, 2, mz + zOff, cx, cy, scale);
+    var bEnd = project(mx - innerX + 4, 2, mz + zOff, cx, cy, scale);
+    drawArrow2D(ctx, bStart.x, bStart.y, bEnd.x, bEnd.y, '#d946ef', 2.2, zOff === -8 ? 'B' : '', -14, -8);
+  }
+
+  var strength = computeFieldStrength();
+  var forceSignZ = state.currentDir;
+  var deflectZ = forceSignZ * strength * 26;
+
+  var wireTop = project(0, 145, 0, cx, cy, scale);
+  var wireBot = project(0, -135, 0, cx, cy, scale);
+  var wireMid = project(0, 0, deflectZ, cx, cy, scale);
+
+  ctx.save();
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(wireTop.x, wireTop.y);
+  ctx.quadraticCurveTo(wireMid.x, wireMid.y, wireBot.x, wireBot.y);
+  ctx.stroke();
+  ctx.restore();
+
+  var batPos = project(-125, -125, -35, cx, cy, scale);
+  ctx.save();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(wireTop.x, wireTop.y);
+  ctx.bezierCurveTo(wireTop.x - 110, wireTop.y - 25, batPos.x - 35, batPos.y - 70, batPos.x - 12, batPos.y - 8);
+  ctx.moveTo(wireBot.x, wireBot.y);
+  ctx.quadraticCurveTo(wireBot.x - 40, batPos.y + 10, batPos.x + 14, batPos.y - 8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(batPos.x - 20, batPos.y - 10, 40, 22);
+  ctx.strokeRect(batPos.x - 20, batPos.y - 10, 40, 22);
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 12px sans-serif';
+  if (state.currentDir === 1) {
+    ctx.fillText('−', batPos.x - 14, batPos.y + 5);
+    ctx.fillText('+', batPos.x + 6, batPos.y + 5);
+  } else {
+    ctx.fillText('+', batPos.x - 14, batPos.y + 5);
+    ctx.fillText('−', batPos.x + 6, batPos.y + 5);
+  }
+  ctx.restore();
+
+  var iBase = project(14, state.currentDir === 1 ? 35 : 85, deflectZ * 0.4, cx, cy, scale);
+  var iTip = project(14, state.currentDir === 1 ? 85 : 35, deflectZ * 0.4, cx, cy, scale);
+  drawArrow2D(ctx, iBase.x, iBase.y, iTip.x, iTip.y, '#2563eb', 3.5, 'i', 8, 4);
+
+  if (strength > 0.08) {
+    var fOrigin = project(0, 0, deflectZ * 0.6, cx, cy, scale);
+    var fEnd = project(0, 0, deflectZ * 0.6 + forceSignZ * (25 + strength * 55), cx, cy, scale);
+    drawArrow2D(ctx, fOrigin.x, fOrigin.y, fEnd.x, fEnd.y, '#f59e0b', 4.2, 'F', 10, 4);
+  }
+
+  ctx.restore();
+}
+
+function drawHandDiagram() {
+  var W = handCanvas.width;
+  var H = handCanvas.height;
+  hctx.clearRect(0, 0, W, H);
+
+  var isUp = state.currentDir === 1;
+  var cx = 175;
+  var cy = isUp ? 88 : 62;
+
+  hctx.save();
+  hctx.fillStyle = '#fde68a';
+  hctx.strokeStyle = '#92400e';
+  hctx.lineWidth = 2;
+
+  drawRoundedRect(hctx, cx - 10, cy - 22, 58, 44, 16);
+  hctx.fill();
+  hctx.stroke();
+
+  var thumbDir = isUp ? -1 : 1;
+  drawRoundedRect(hctx, cx - 4, isUp ? cy - 58 : cy + 12, 16, 46, 8);
+  hctx.fill();
+  hctx.stroke();
+
+  drawRoundedRect(hctx, cx - 72, cy - 12, 68, 15, 7);
+  hctx.fill();
+  hctx.stroke();
+
+  hctx.save();
+  hctx.translate(cx - 4, cy + (isUp ? 8 : -8));
+  hctx.rotate(isUp ? -0.45 : 0.45);
+  drawRoundedRect(hctx, -64, -7, 66, 15, 7);
+  hctx.fill();
+  hctx.stroke();
+  hctx.restore();
+
+  drawArrow2D(hctx, cx + 24, cy + thumbDir * 15, cx + 24, cy + thumbDir * 58, '#2563eb', 3, 'i', 8, 5);
+  drawArrow2D(hctx, cx - 25, cy - 22, cx - 78, cy - 22, '#d946ef', 3, 'B', -16, 4);
+  if (isUp) {
+    drawArrow2D(hctx, cx - 18, cy + 22, cx - 72, cy + 48, '#f59e0b', 3, 'F', -18, 8);
+  } else {
+    drawArrow2D(hctx, cx - 18, cy - 26, cx - 72, cy - 50, '#f59e0b', 3, 'F', -18, 4);
+  }
+
+  hctx.restore();
+
+  document.getElementById('handCaption').innerHTML = isUp
+    ? "<strong>Pollice</strong> = corrente <b>i</b> (verso l'alto)<br><strong>Indice</strong> = campo <b>B</b> (da N a S, sinistra)<br><strong>Medio</strong> = forza <b>F</b> (tira verso il fondo)"
+    : "<strong>Pollice</strong> = corrente <b>i</b> (verso il basso)<br><strong>Indice</strong> = campo <b>B</b> (da N a S, sinistra)<br><strong>Medio</strong> = forza <b>F</b> (respinge in avanti)";
+}
+
+window.addEventListener('resize', draw);
+window.addEventListener('load', updateUI);
+updateUI();
+</script>
+</body>
+</html>
